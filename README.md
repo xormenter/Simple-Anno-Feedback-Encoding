@@ -4,6 +4,10 @@ Converts a simplified feedback definition for Anno 1800 into .cf7 files.
 ## Requirements
 - Python3 with lxml
 
+## Usage
+``python3 simple_anno_feedback_encoding_to_cf7 -i example_input.xml``
+Converts it to cf7. Then convert it to .fc.
+
 ## The simplified feedback:
 Anno 1800 .fc files are complicated, no one really knows how exactlythey work and you need to keep a lot of things in mind to not mess up, so they scare people, which is bad. 
 The new format is less powerful, but still allows you to describe sequences of actors moving from waypoint to waypoint and showing idle animations, which is the number one use case.
@@ -93,6 +97,3 @@ The following snippets defines a feedback loop where cows walks between two spot
 </SimpleAnnoFeedbackEncoding>
 ```
 
-## Usage
-``python3 simple_anno_feedback_encoding_to_cf7 -i example_input.xml``
-Converts it to cf7. Then convert it to .fc.
