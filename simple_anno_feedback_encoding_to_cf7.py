@@ -1,0 +1,258 @@
+from lxml import etree
+import subprocess
+from pathlib import Path
+
+import argparse
+from io import StringIO
+
+
+def get_text(node, query, default = ""):
+    if node.find(query) is not None:
+        return node.find(query).text
+    return default
+
+def get_required_text(node, query):
+    if node.find(query) is not None:
+        return node.find(query).text
+    raise Exception(f"Missing node {query}")
+
+
+
+class FeedbackConfig():
+    property_values = {"Description":"", "IgnoreRootObjectXZRotation":"1", "IsAlwaysVisibleActor":"0", "ApplyScaleToMovementSpeed":"1", "ActorCount":"1", \
+        "MaxActorCount":"1", "CreateChance":"100", "BoneLink":"NoLink", "RenderFlags":"0", "MultiplyActorByDummyCount":None, "IgnoreForceActorVariation":"0", "IgnoreDistanceScale":"0"}
+    def __init__(self, feedback_config_node, feedback_encoding):
+        self.node = feedback_config_node
+        self.feedback_encoding = feedback_encoding
+        self.extract_properties()
+        self.extract_guid_variations()
+        self.extract_scale()
+        self.default_state_dummy = get_required_text(self.node, "DefaultStateDummy")
+        self.extract_sequence()
+
+    def extract_properties(self):
+        self.properties = {}
+        for prop, default_value in FeedbackConfig.property_values.items():
+            value = get_text(self.node, prop, default_value)
+            self.properties[prop] = value
+
+    def extract_guid_variations(self):
+        self.guid_variations = []
+        for guid_node in self.node.find("GUIDVariationList").findall("GUID"):
+            guid = guid_node.text
+            if guid in self.feedback_encoding.guid_by_name:
+                guid = self.feedback_encoding.guid_by_name[guid]
+            self.guid_variations.append(guid)
+    
+    def extract_scale(self):
+        scale_node = self.node.find("Scale")
+        self.min_scale = get_required_text(scale_node, "m_MinScaleFactor")
+        self.max_scale = get_required_text(scale_node, "m_MaxScaleFactor")
+
+    def extract_sequence(self):
+        self.sequence_elements = []
+        for sequence_element_node in list(self.node.find("SequenceElements")):
+            element = etree.Element("i")
+            etree.SubElement(element, "hasValue").text = "1"
+            if sequence_element_node.tag == "IdleAnimation":
+                etree.SubElement(element, "elementType").text = "1"
+                etree.SubElement(element, "m_IdleSequenceID").text = get_required_text(sequence_element_node, "m_IdleSequenceID")
+                etree.SubElement(element, "MinPlayCount").text = get_required_text(sequence_element_node, "MinPlayCount")
+                etree.SubElement(element, "MaxPlayCount").text = get_required_text(sequence_element_node, "MaxPlayCount")
+                etree.SubElement(element, "MinPlayTime").text = "0"
+                etree.SubElement(element, "MaxPlayTime").text = "0"
+                etree.SubElement(element, "ResetStartTime").text = "0"
+            if sequence_element_node.tag == "TimedIdleAnimation":
+                etree.SubElement(element, "elementType").text = "1"
+                etree.SubElement(element, "m_IdleSequenceID").text = get_required_text(sequence_element_node, "m_IdleSequenceID")
+                etree.SubElement(element, "MinPlayCount").text = "0"
+                etree.SubElement(element, "MaxPlayCount").text = "0"
+                etree.SubElement(element, "MinPlayTime").text = get_required_text(sequence_element_node, "MinPlayTime")
+                etree.SubElement(element, "MaxPlayTime").text = get_required_text(sequence_element_node, "MaxPlayTime")
+                etree.SubElement(element, "ResetStartTime").text = "0"
+            if sequence_element_node.tag == "Walk":
+                etree.SubElement(element, "elementType").text = "0"
+                etree.SubElement(element, "WalkSequence").text = get_required_text(sequence_element_node, "WalkSequence")
+                etree.SubElement(element, "TargetDummy").text = get_required_text(sequence_element_node, "TargetDummy")
+                etree.SubElement(element, "TargetDummyId").text = self.feedback_encoding.dummy_id_by_name[get_required_text(sequence_element_node, "TargetDummy")]
+                etree.SubElement(element, "SpeedFactorF").text = get_required_text(sequence_element_node, "SpeedFactorF")
+                etree.SubElement(element, "StartDummy")
+                etree.SubElement(element, "StartDummyId").text = "0"
+                etree.SubElement(element, "WalkFromCurrentPosition").text = "1"
+                etree.SubElement(element, "UseTargetDummyDirection").text = "1"
+                etree.SubElement(element, "DummyGroup").text = "CDATA[12 -1 -1 -1]"
+            self.sequence_elements.append(element)
+
+    def export_to_cf7(self, feedback_config_node):
+        etree.SubElement(feedback_config_node, "hasValue").text = "1"
+        etree.SubElement(feedback_config_node, "MainObject").text = "0"
+        self.export_properties(feedback_config_node)
+        self.export_guid_variations(feedback_config_node)
+        fl_node = etree.SubElement(feedback_config_node, "FeedbackLoops") #no idea what this is...
+        etree.SubElement(fl_node, "k").text = "1"
+        etree.SubElement(fl_node, "v").text = "0"
+        sequence_definitions_node = etree.SubElement(feedback_config_node, "SequenceDefinitions")
+        sequence_definition_node = etree.SubElement(sequence_definitions_node, "i")
+        self.export_sequence_definition(sequence_definition_node)
+
+    def export_properties(self, feedback_config_node):
+        for prop, value in self.properties.items():
+            prop_element = etree.SubElement(feedback_config_node, prop)
+            if value is not None:
+                prop_element.text = str(value)
+
+    def export_guid_variations(self, feedback_config_node):
+        asset_variation_node = etree.SubElement(feedback_config_node, "AssetVariationList")
+        guid_variation_bytes = 8 * len(self.guid_variations)
+        guid_variations_string = f"CDATA[{guid_variation_bytes} {' '.join([guid + ' -1' for guid in self.guid_variations])}]"
+        etree.SubElement(asset_variation_node, "GuidVariationList").text = guid_variations_string
+        etree.SubElement(asset_variation_node, "AssetGroupNames")
+
+    def export_sequence_definition(self, feedback_config_node):
+        etree.SubElement(feedback_config_node, "hasValue").text = "1"
+        
+        #Loop 0 - mostly hardcoded
+        loop0_node = etree.SubElement(feedback_config_node, "Loop0")
+        etree.SubElement(loop0_node, "hasValue").text = "1"
+        loop0_default_state_node = etree.SubElement(loop0_node, "DefaultState")
+        etree.SubElement(loop0_default_state_node, "DummyName")
+        etree.SubElement(loop0_default_state_node, "StartDummyGroup")
+        etree.SubElement(loop0_default_state_node, "DummyId").text = "0"
+        etree.SubElement(loop0_default_state_node, "SequenceID").text = "-1"
+        etree.SubElement(loop0_default_state_node, "Visible").text = "1"
+        etree.SubElement(loop0_default_state_node, "FadeVisibility").text = "1"
+        etree.SubElement(loop0_default_state_node, "ResetToDefaultEveryLoop").text = "1"
+        etree.SubElement(loop0_default_state_node, "ForceSequenceRestart").text = "0"
+        loop_0_container = etree.SubElement(loop0_node, "ElementContainer")
+        loop_0_elements = etree.SubElement(loop_0_container, "Elements")
+        loop_0_element1 = etree.SubElement(loop_0_elements, "i")
+        etree.SubElement(loop_0_element1, "hasValue").text = "1"
+        etree.SubElement(loop_0_element1, "elementType").text = "9"
+        etree.SubElement(loop_0_element1, "m_MinScaleFactor").text = self.min_scale
+        etree.SubElement(loop_0_element1, "m_MaxScaleFactor").text = self.max_scale
+        
+        #loop 1
+        loop1_node = etree.SubElement(feedback_config_node, "Loop1")
+        etree.SubElement(loop1_node, "hasValue").text = "1"
+        loop1_default_state_node = etree.SubElement(loop1_node, "DefaultState")
+        etree.SubElement(loop1_default_state_node, "DummyName").text = self.default_state_dummy
+        etree.SubElement(loop1_default_state_node, "StartDummyGroup")
+        etree.SubElement(loop1_default_state_node, "DummyId").text = self.feedback_encoding.dummy_id_by_name[self.default_state_dummy]
+        etree.SubElement(loop1_default_state_node, "SequenceID").text = "-1"
+        etree.SubElement(loop1_default_state_node, "Visible").text = "1"
+        etree.SubElement(loop1_default_state_node, "FadeVisibility").text = "1"
+        etree.SubElement(loop1_default_state_node, "ResetToDefaultEveryLoop").text = "1"
+        etree.SubElement(loop1_default_state_node, "ForceSequenceRestart").text = "0"
+        loop_1_container = etree.SubElement(loop1_node, "ElementContainer")
+        loop_1_elements = etree.SubElement(loop_1_container, "Elements")
+        for element in self.sequence_elements:
+            loop_1_elements.append(element)
+
+class SimpleAnnoFeedbackEncoding():
+    def __init__(self, root_node):
+        self.root = root_node
+        self.dummy_id_by_name = {} #id by name
+        self.dummy_id_counter = 1 #id1 is reserved for the dummy_group node
+        self.dummy_groups = {} #list of dummies (nodes) by group name
+        self.guid_by_name = {} 
+        self.feedback_configs = []
+
+        self.extract_guid_names()
+        self.extract_dummy_groups()
+        self.extract_feedback_configs()
+
+    def extract_dummy_groups(self):
+        for dummy_group_node in self.root.find("DummyGroups").findall("DummyGroup"):
+            name = get_required_text(dummy_group_node, "Name")
+            dummy_id = self.get_dummy_id() #groups also need an id for some reason
+            if name in self.dummy_id_by_name:
+                raise Exception(f"Non unique dummy name {name}")
+            self.dummy_id_by_name[name] = dummy_id
+            self.dummy_groups[name] = self.extract_dummies(dummy_group_node)
+
+    def get_dummy_id(self):
+        self.dummy_id_counter += 1
+        return str(self.dummy_id_counter)
+
+    def extract_dummies(self, dummy_group_node):
+        dummies = []
+        for dummy_node in dummy_group_node.findall("Dummy"):
+            name = get_required_text(dummy_node, "Name")
+            dummy_id = self.get_dummy_id()
+            if name in self.dummy_id_by_name:
+                raise Exception(f"Non unique dummy name {name}")
+            self.dummy_id_by_name[name] = dummy_id
+
+            etree.SubElement(dummy_node, "Id").text = str(dummy_id)
+            etree.SubElement(dummy_node, "hasValue").text = "1"
+            etree.SubElement(dummy_node, "RotationY").text = str("0.000000")
+            dummies.append(dummy_node)
+        return dummies
+
+    def extract_guid_names(self):
+        for item_node in self.root.find("GUIDNames").findall("Item"):
+            name = get_required_text(item_node, "Name")
+            guid = get_required_text(item_node, "GUID")
+            self.guid_by_name[name] = guid
+        
+    def extract_feedback_configs(self):
+        for feedback_config_node in self.root.find("FeedbackConfigs").findall("FeedbackConfig"):
+            self.feedback_configs.append(FeedbackConfig(feedback_config_node, self))
+
+    def as_cf7(self):
+        cf7root = etree.Element("cf7_imaginary_root")
+        dummy_root = etree.SubElement(cf7root, "DummyRoot")
+        self.export_dummies(dummy_root)
+        etree.SubElement(cf7root, "IdCounter").text = str(self.dummy_id_counter)
+        etree.SubElement(cf7root, "SplineData")
+
+        feedback_definition_node = etree.SubElement(cf7root, "FeedbackDefinition")
+        feedback_configs_node = etree.SubElement(feedback_definition_node, "FeedbackConfigs")
+        for feedback_config in self.feedback_configs:
+            feedback_config_node = etree.SubElement(feedback_configs_node, "i")
+            feedback_config.export_to_cf7(feedback_config_node)
+        etree.SubElement(feedback_definition_node, "ValidSequenceIDs").text = "CDATA[8 0 1]"
+
+        return cf7root
+
+    def export_dummies(self, dummy_root):
+        etree.SubElement(dummy_root, "hasValue").text = "1"
+        etree.SubElement(dummy_root, "Name")
+        etree.SubElement(dummy_root, "Dummies")
+        etree.SubElement(dummy_root, "Id").text = "1"
+        dummy_groups_node = etree.SubElement(dummy_root, "Groups")
+        for dummy_group_name in self.dummy_groups:
+            group_item_node = etree.SubElement(dummy_groups_node, "i")
+            self.export_dummy_group(dummy_group_name, group_item_node)
+    
+    def export_dummy_group(self, dummy_group_name, group_item_node):
+        etree.SubElement(group_item_node, "hasValue").text = "1"
+        etree.SubElement(group_item_node, "Name").text = dummy_group_name
+        etree.SubElement(group_item_node, "Id").text = self.dummy_id_by_name[dummy_group_name]
+        etree.SubElement(group_item_node, "Groups")
+        dummy_list_node = etree.SubElement(group_item_node, "Dummies")
+        for dummy_node in self.dummy_groups[dummy_group_name]:
+            dummy_node.tag = "i"
+            dummy_list_node.append(dummy_node)
+
+
+        
+
+if __name__ == "__main__":
+        
+    parser = argparse.ArgumentParser("safe_to_cf7")
+    parser.add_argument("-i", "--input", dest="filename", required=True, type=str,
+                            help="input file (.safe.xml)", metavar="FILE")
+    args = parser.parse_args()
+    print(args.filename)
+
+    tree = etree.parse(args.filename)
+    root = tree.getroot()
+    
+    safe = SimpleAnnoFeedbackEncoding(root)
+    cf7root = safe.as_cf7()
+    etree.indent(cf7root, space="\t")
+    cf7string = etree.tostring(cf7root, pretty_print=True, encoding='unicode', method='xml').replace("</cf7_imaginary_root>", "").replace("<cf7_imaginary_root>","")
+    with open(str(Path(args.filename).with_suffix(".cf7")), 'w') as f:
+        print(str(Path(args.filename).with_suffix(".cf7").absolute()))
+        f.write(cf7string)
