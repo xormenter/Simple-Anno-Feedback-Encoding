@@ -6,10 +6,11 @@
         </Item>
     </GUIDNames>
     <DummyGroups>
+
         <DummyGroup>
-            <Name>butcher_f_group</Name>
+            <Name>cow_walking</Name>
             <Dummy>
-                <Name>butcher_female_1</Name>
+                <Name>cow_walking_1</Name>
                 <Position>
 					<x>-0.744948</x>
 					<y>0.788913</y>
@@ -29,7 +30,7 @@
                 <HeightAdaptationMode>1</HeightAdaptationMode>
             </Dummy>
             <Dummy>
-                <Name>butcher_female_2</Name>
+                <Name>cow_walking_2</Name>
                 <Position>
 					<x>1.744948</x>
 					<y>2.788913</y>
@@ -64,7 +65,7 @@
             <CreateChance>100</CreateChance>
             <BoneLink>NoLink</BoneLink>
             <RenderFlags>0</RenderFlags>
-            <MultiplyActorByDummyCount>working</MultiplyActorByDummyCount>
+            <MultiplyActorByDummyCount />
             <IgnoreForceActorVariation>0</IgnoreForceActorVariation>
             <IgnoreDistanceScale>0</IgnoreDistanceScale>
             
@@ -72,7 +73,7 @@
                 <m_MinScaleFactor>1.000000</m_MinScaleFactor>
                 <m_MaxScaleFactor>1.000000</m_MaxScaleFactor>
             </Scale>
-            <DefaultStateDummy>butcher_female_1</DefaultStateDummy>
+            <DefaultStateDummy>cow_walking_1</DefaultStateDummy>
             <SequenceElements>
                 <IdleAnimation>
                     <m_IdleSequenceID>1000</m_IdleSequenceID>
@@ -86,19 +87,19 @@
                 </TimedIdleAnimation>
                 <Walk>
                     <WalkSequence>2000</WalkSequence>
-                    <TargetDummy>butcher_female_2</TargetDummy>
+                    <TargetDummy>cow_walking_2</TargetDummy>
                     <SpeedFactorF>1.000000</SpeedFactorF>
-                </Walk>
-                <Walk>
-                    <WalkSequence>2000</WalkSequence>
-                    <TargetDummy>butcher_female_1</TargetDummy>
-                    <SpeedFactorF>0.000000</SpeedFactorF>
                 </Walk>
                 <TimedIdleAnimation>
                     <m_IdleSequenceID>1000</m_IdleSequenceID>
                     <MinPlayTime>3000</MinPlayTime>
                     <MaxPlayTime>5000</MaxPlayTime>
                 </TimedIdleAnimation>
+                <Walk>
+                    <WalkSequence>2000</WalkSequence>
+                    <TargetDummy>cow_walking_1</TargetDummy>
+                    <SpeedFactorF>0.000000</SpeedFactorF>
+                </Walk>
                 <IdleAnimation>
                     <Description>do something else</Description>
                     <m_IdleSequenceID>1000</m_IdleSequenceID>
