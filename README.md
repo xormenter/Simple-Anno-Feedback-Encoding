@@ -72,22 +72,22 @@ The following snippets defines a feedback loop where cows walks between two spot
             <SequenceElements>
                 <!-- A sequence consists of an arbitrary number of IdleAnimation, TimedIdleAnimation and Walk elements. They are played back in this order. -->
                 <IdleAnimation>
-                    <m_IdleSequenceID>1000</m_IdleSequenceID> <!-- Animation: Cow eating -->
+                    <m_IdleSequenceID>idle01</m_IdleSequenceID> <!-- Animation: Cow eating. To get a list of valid sequences, run the program with the flag -s.-->
                     <MinPlayCount>1</MinPlayCount>
                     <MaxPlayCount>3</MaxPlayCount>
                 </IdleAnimation>
                 <Walk> <!-- Walk from the current position to the TargetDummy -->
-                    <WalkSequence>2000</WalkSequence> <!-- Animation: Cow walking -->
+                    <WalkSequence>walk01</WalkSequence> <!-- Animation: Cow walking -->
                     <TargetDummy>walking_cow_1</TargetDummy>
                     <SpeedFactorF>1.000000</SpeedFactorF>
                 </Walk>
                 <TimedIdleAnimation> <!-- Time in ms -->
-                    <m_IdleSequenceID>1000</m_IdleSequenceID>
+                    <m_IdleSequenceID>idle01</m_IdleSequenceID>
                     <MinPlayTime>1000</MinPlayTime>
                     <MaxPlayTime>3000</MaxPlayTime>
                 </TimedIdleAnimation>
                 <Walk> 
-                    <WalkSequence>2000</WalkSequence>
+                    <WalkSequence>walk01</WalkSequence>
                     <TargetDummy>walking_cow_2</TargetDummy>
                     <SpeedFactorF>0.000000</SpeedFactorF>
                 </Walk>
