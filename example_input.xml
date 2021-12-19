@@ -91,7 +91,7 @@
                     <SpeedFactorF>1.000000</SpeedFactorF>
                 </Walk>
                 <TimedIdleAnimation>
-                    <m_IdleSequenceID>idle_01</m_IdleSequenceID>
+                    <m_IdleSequenceID>idle01</m_IdleSequenceID>
                     <MinPlayTime>3000</MinPlayTime>
                     <MaxPlayTime>5000</MaxPlayTime>
                 </TimedIdleAnimation>
