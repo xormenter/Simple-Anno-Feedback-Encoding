@@ -27,6 +27,7 @@
 					<y>0.400000</y>
 					<z>0.400000</z>
 				</Extents>
+		    		<RotationY>-0.160669</RotationY>
                 <HeightAdaptationMode>1</HeightAdaptationMode>
             </Dummy>
             <Dummy>
@@ -47,6 +48,7 @@
 					<y>1.400000</y>
 					<z>1.400000</z>
 				</Extents>
+		    		<RotationY>-0.160669</RotationY>
                 <HeightAdaptationMode>1</HeightAdaptationMode>
             </Dummy>
         </DummyGroup>
