@@ -36,6 +36,7 @@ The following snippets defines a feedback loop where cows walks between two spot
                 <Extents>
                   <x>0.400000</x><y>0.400000</y><z>0.400000</z>
                 </Extents>
+                <RotationY>0.000000</RotationY>
                 <HeightAdaptationMode>1</HeightAdaptationMode>
             </Dummy>
             <Dummy>
@@ -49,6 +50,7 @@ The following snippets defines a feedback loop where cows walks between two spot
                 <Extents>
                   <x>1.400000</x><y>1.400000</y><z>1.400000</z>
                 </Extents>
+                <RotationY>3.141529</RotationY>
                 <HeightAdaptationMode>1</HeightAdaptationMode>
           </Dummy>
         </DummyGroup>
