@@ -3,16 +3,25 @@ Converts a simplified feedback definition for Anno 1800 into .cf7 files.
 
 ## Requirements
 - Python3 with lxml
+- I suggest using my blender addon for positioning the dummies. https://github.com/xormenter/Blender-Anno-.cfg-Import-Addon/blob/main/README.md
 
 ## Usage
 ``python3 simple_anno_feedback_encoding_to_cf7 -i example_input.xml``
 Converts it to cf7. Then convert it to .fc.
 
 ## The simplified feedback:
-Anno 1800 .fc files are complicated, no one really knows how exactlythey work and you need to keep a lot of things in mind to not mess up, so they scare people, which is bad. 
+Anno 1800 .fc files are complicated, no one really knows how exactly they work and you need to keep a lot of things in mind to not mess up, so they scare people, which is bad. 
 The new format is less powerful, but still allows you to describe sequences of actors moving from waypoint to waypoint and showing idle animations, which is the number one use case.
 
-The following snippets defines a feedback loop where cows walks between two spots and eats some grass.
+### Example
+Let's say we want to have a cow that moves between 2 locations and eats some grass at both of them. 
+Firstly, we need the GUID of the cow feedback actor, which is 1000135. For readability, we can define an alias ``GUID_COW`` in the ``GUIDNames`` section. This is optional though.
+Then, before we tell the cow to move, we must define the "waypoints", which are called Dummy in Anno. Actually, not all dummies in .fc files are such waypoints (all Dummies in the FireDummy group are fire spawning places), but most are. So we add two dummies here, ``walking_cow_1`` and ``walking_cow_2`` (and put them in a similarly named dummy group). Please note that all dummies need a unique name! The most important other attributes of a dummy are ``Position``, ``RotationY`` and ``HeightAdaptationMode`` (1 -> adapt to terrain height; 0 -> always at the same height). But I'd suggest to use a tool for placing the dummies.
+
+Then we come to the ``FeedbackConfigs`` section. Each ``FeedbackConfig`` entry in here corresponds to one animation sequence. Here we must specify that we want to use the cow model by adding it in the ``GUIDVariationList`` (we could add multiple different guid entries here). We want 1 cow and it should be scaled at 0.5 (seems to be the default for a lot of actors). We must also specify where our cow should start, lets say at the  ``walking_cow_1`` dummy.
+Finally, we can define our animation sequence in ``SequenceElements``: Here we can add ``IdleAnimation, TimedIdleAnimation, TurnAngle, TurnAtDummy, Walk, Wait`` sections which are played back in the order in which we define them here. First we want the cow to eat, so we use an ``IdleAnimation`` with the ``idle01`` animation (eating grass). (To get a list of possible animations, run the program with the option -s. Note that not all animations are valid for all actors, if they are invalid the actor will simply vanish.) Then, the cow should move to the next waypoint, so we use a ``Walk`` section where we specify the next dummy ``walking_cow_2``. A ``SpeedFactorF`` of zero corresponds to the default speed. Then we add another idle animation and move back to the start, and we'e done.
+
+Here's the full code: 
 ```xml
 <SimpleAnnoFeedbackEncoding>
     <GUIDNames>     <!-- (Optional) Aliases for readability -->
@@ -63,7 +72,7 @@ The following snippets defines a feedback loop where cows walks between two spot
             </GUIDVariationList>
             <IsAlwaysVisibleActor>0</IsAlwaysVisibleActor>
             <ActorCount>1</ActorCount>
-            <MaxActorCount>2</MaxActorCount>
+            <MaxActorCount>1</MaxActorCount>
             <CreateChance>100</CreateChance>
             <MultiplyActorByDummyCount/>
             <Scale>
