@@ -7,7 +7,7 @@ from io import StringIO
 import difflib
 
 
-SEQUENCE_ID_BY_NAME = {"idle01":1000, "idle02":1001, "idle03":1002, "idle04":1003, "idle05":1003, "death01":1005, "talk01":1010, "talk02":1011, "greet01":1020, \
+SEQUENCE_ID_BY_NAME = {"none":-1, "idle01":1000, "idle02":1001, "idle03":1002, "idle04":1003, "idle05":1003, "death01":1005, "talk01":1010, "talk02":1011, "greet01":1020, \
     "bow01":1021, "cheer01":1030, "cheer02":1031, "cheer03":1032, "lookat01":1040, "lookat02":1041, "protest01":1050, "protest02":1051, "laydown01":1060, \
     "laydown02":1061, "laydown03":1062, "fishing01":1070, "fishing02":1071, "fishing03":1072, "dance01":1080, "dance02":1081, "dance03":1082, "dance04":1083, "fight01":1090, \
     "fight02":1091, "walk01":2000, "walk02":2001, "walk03":2002, "walk04":2003, "walk05":2004, "walk06":2005, "walk07":2005, "drunkenwalk01":2010, "drunkenwalk02":2011, \
@@ -42,7 +42,7 @@ def get_required_text(node, query):
 
 
 class FeedbackConfig():
-    property_values = {"Description":"", "IgnoreRootObjectXZRotation":"1", "IsAlwaysVisibleActor":"0", "ApplyScaleToMovementSpeed":"1", "ActorCount":"1", \
+    property_values = {"Description":"", "IgnoreRootObjectXZRotation":"0", "IsAlwaysVisibleActor":"0", "ApplyScaleToMovementSpeed":"1", "ActorCount":"1", \
         "MaxActorCount":"1", "CreateChance":"100", "BoneLink":"NoLink", "RenderFlags":"0", "MultiplyActorByDummyCount":None, "IgnoreForceActorVariation":"0", "IgnoreDistanceScale":"0"}
     def __init__(self, feedback_config_node, feedback_encoding):
         self.node = feedback_config_node
@@ -106,6 +106,22 @@ class FeedbackConfig():
                 etree.SubElement(element, "WalkFromCurrentPosition").text = "1"
                 etree.SubElement(element, "UseTargetDummyDirection").text = "1"
                 etree.SubElement(element, "DummyGroup").text = "CDATA[12 -1 -1 -1]"
+            if sequence_element_node.tag == "Wait":
+                etree.SubElement(element, "elementType").text = "2"
+                etree.SubElement(element, "MinTime").text = get_required_text(sequence_element_node, "MinTime")
+                etree.SubElement(element, "MaxTime").text = get_required_text(sequence_element_node, "MaxTime")
+            if sequence_element_node.tag == "TurnAngle":
+                etree.SubElement(element, "elementType").text = "10"
+                etree.SubElement(element, "TurnAngleF").text = get_required_text(sequence_element_node, "TurnAngleF") #in radians
+                etree.SubElement(element, "TurnSequence").text = get_required_text(sequence_element_node, "TurnSequence")
+                etree.SubElement(element, "TurnToDummy")
+                etree.SubElement(element, "TurnToDummyID").text = "0"
+            if sequence_element_node.tag == "TurnToDummy":
+                etree.SubElement(element, "elementType").text = "10"
+                etree.SubElement(element, "TurnAngleF").text = "0"
+                etree.SubElement(element, "TurnSequence").text = get_required_text(sequence_element_node, "TurnSequence")
+                etree.SubElement(element, "TurnToDummy").text = get_required_text(sequence_element_node, "TurnToDummy")
+                etree.SubElement(element, "TurnToDummyID").text = self.feedback_encoding.dummy_id_by_name[get_required_text(sequence_element_node, "TurnToDummy")]
             self.sequence_elements.append(element)
 
     def export_to_cf7(self, feedback_config_node):
@@ -211,6 +227,10 @@ class SimpleAnnoFeedbackEncoding():
             etree.SubElement(dummy_node, "Id").text = str(dummy_id)
             etree.SubElement(dummy_node, "hasValue").text = "1"
             etree.SubElement(dummy_node, "RotationY").text = str("0.000000")
+
+            # Okay, rotation is fully controlled by rotationY with 0 => looking towards negative x, 3.14 => looking towards positive x.
+            # Orientation is something else entirely.
+
             dummies.append(dummy_node)
         return dummies
 
