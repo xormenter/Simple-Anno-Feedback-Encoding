@@ -70,7 +70,7 @@ The following snippets defines a feedback loop where cows walks between two spot
             </Scale>
             <DefaultStateDummy>walking_cow_1</DefaultStateDummy>
             <SequenceElements>
-                <!-- A sequence consists of an arbitrary number of IdleAnimation, TimedIdleAnimation and Walk elements. They are played back in this order. -->
+                <!-- A sequence consists of an arbitrary number of IdleAnimation, TimedIdleAnimation, TurnAngle, TurnAtDummy and Walk elements. They are played back in this order. -->
                 <IdleAnimation>
                     <m_IdleSequenceID>idle01</m_IdleSequenceID> <!-- Animation: Cow eating. To get a list of valid sequences, run the program with the flag -s.-->
                     <MinPlayCount>1</MinPlayCount>
